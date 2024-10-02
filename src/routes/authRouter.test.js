@@ -6,7 +6,7 @@ function randomName() {
 }
 
 const testUser = { name: randomName(), email: randomName() + '@test.com', password: randomName() };
-
+const unusedVar = 3;
 beforeAll(async () => {
   testUser.email = randomName() + '@test.com';
   await request(app).post('/api/auth').send(testUser);
