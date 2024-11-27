@@ -45,6 +45,5 @@ class Metrics {
   }
 }
 
-// Create and export an instance of Metrics with the loaded configuration
 module.exports = new Metrics(config);
 
