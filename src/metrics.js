@@ -15,8 +15,10 @@ class Metrics {
 
   incrementRequests(method) {
     this.totalRequests++;
+    console.log(`method ${method}`);
     if (this.methodCounts[method]) {
       this.methodCounts[method]++;
+      console.log(`line 21`);
     }
     this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
     this.sendMetricToGrafana('request', method, 'total', this.methodCounts[method]);
