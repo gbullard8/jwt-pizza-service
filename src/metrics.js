@@ -23,7 +23,7 @@ class Metrics {
   }
 
   async sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
-    const metric = `${metricPrefix},source=${this.config.source},method=${httpMethod} ${metricName}=${metricValue}`;
+    const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
     try {
       const response = await fetch(this.config.url, {
