@@ -10,19 +10,25 @@ class Metrics {
       PUT: 0,
       DELETE: 0,
     };
-    this.config = config.metrics;
+    this.config = config.metrics; 
   }
 
   incrementRequests(method) {
     this.totalRequests++;
+
     if (this.methodCounts[method]) {
       this.methodCounts[method]++;
+    } else {
+      console.warn(`Unhandled HTTP method: ${method}`);
     }
+
     this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
     this.sendMetricToGrafana('request', method, 'total', this.methodCounts[method]);
   }
 
   async sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
+    if (metricValue === undefined) return; 
+
     const metric = `${metricPrefix},source=${this.config.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
     try {
@@ -35,16 +41,16 @@ class Metrics {
       });
 
       if (!response.ok) {
-        console.error('Failed to push metrics data to Grafana');
+        console.error(`Failed to push metric to Grafana: ${response.statusText}`);
       } else {
-        console.log(`Pushed metric: ${metric}`);
+        console.log(`Successfully pushed metric: ${metric}`);
       }
     } catch (error) {
-      console.error('Error pushing metrics to Grafana:', error);
+      console.error(`Error pushing metric to Grafana:`, error);
     }
   }
 }
 
-// Create and export an instance of Metrics with the loaded configuration
 module.exports = new Metrics(config);
+
 
