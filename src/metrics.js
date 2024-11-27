@@ -1,5 +1,5 @@
 const fetch = require('node-fetch');
-const config = require('./config'); // Dynamically load configuration values from config.js
+const config = require('./config');
 
 class Metrics {
   constructor(config) {

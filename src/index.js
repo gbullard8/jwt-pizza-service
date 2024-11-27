@@ -1,23 +1,30 @@
-const app = require('./service.js'); // Use the pre-configured app from service.js
-const metrics = require('./metrics'); // Import metrics instance
+const express = require('express');
+const fetch = require('node-fetch');
 
-const port = process.argv[2] || 3000;
+const router = express.Router();
 
-// Middleware to track all requests and their methods
-app.use((req, res, next) => {
-  metrics.incrementRequests(req.method); // Track total requests and method-specific counts
-  next();
+
+router.get('/menu', async (req, res) => {
+  try {
+    const backendUrl = 'https://pizza-service.cs329jwtpizza.com/api/order/menu'; 
+
+    const response = await fetch(backendUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch menu: ${response.statusText}`);
+    }
+
+    const menuData = await response.json();
+
+    res.json(menuData);
+  } catch (error) {
+    console.error('Error fetching menu data:', error);
+    res.status(500).json({ error: 'Failed to fetch menu data' });
+  }
 });
 
-// Example route
-app.get('/hello/:name', (req, res) => {
-  res.send({ message: `Hello, ${req.params.name}!` });
-});
+module.exports = router;
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server started on port ${port}`);
-});
 
 
 
