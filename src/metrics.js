@@ -26,11 +26,11 @@ class Metrics {
     const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
     try {
-      const response = await fetch(this.config.url, {
+      const response = await fetch(config.url, {
         method: 'POST',
         body: metric,
         headers: {
-          Authorization: `Bearer ${this.config.userId}:${this.config.apiKey}`,
+          Authorization: `Bearer ${config.userId}:${config.apiKey}`,
         },
       });
 
