@@ -6,7 +6,7 @@ app.listen(port, () => {
 });
 
 const express = require('express');
-const app = express();
+app = express();
 
 const metrics = require('./metrics');
 let greeting = 'hello';
