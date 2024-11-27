@@ -45,8 +45,8 @@ orderRouter.endpoints = [
 orderRouter.get(
   '/menu',
   asyncHandler(async (req, res) => {
-    res.send(await DB.getMenu());
     metrics.incrementRequests('GET');
+    res.send(await DB.getMenu());
   })
 );
 
