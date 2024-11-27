@@ -23,14 +23,14 @@ class Metrics {
   }
 
   async sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
-    const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
+    const metric = `${metricPrefix},source=${config.metrics.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
     try {
-      const response = await fetch(config.url, {
+      const response = await fetch(config.metrics.url, {
         method: 'POST',
         body: metric,
         headers: {
-          Authorization: `Bearer ${config.userId}:${config.apiKey}`,
+          Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
         },
       });
 
