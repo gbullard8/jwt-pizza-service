@@ -1,26 +1,19 @@
-const app = require('./service.js');
-const metrics = require('./metrics');
-const fetch = require('node-fetch');
+const app = require('./service.js'); // Use the pre-configured app from service.js
+const metrics = require('./metrics'); // Import metrics instance
 
 const port = process.argv[2] || 3000;
 
-// Update Grafana metrics each time the script runs
-const updateMetrics = async () => {
-  try {
-    const response = await fetch(`${process.argv[3] || 'http://localhost:3000'}/metrics`);
-    if (response.ok) {
-      console.log('Metrics updated in Grafana.');
-    } else {
-      console.error('Failed to update metrics in Grafana.');
-    }
-  } catch (error) {
-    console.error('Error updating metrics in Grafana:', error);
-  }
-};
+let greeting = 'hello';
 
-// Start server and update Grafana metrics
-app.listen(port, async () => {
-  console.log(`Server started on port ${port}`);
-  await updateMetrics();
+// Route to update Grafana metrics explicitly
+app.get('/hello/:name', (req, res) => {
+  metrics.incrementRequests(); // Use metrics to track the request
+  res.send({ [greeting]: req.params.name });
 });
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
+});
+
 
