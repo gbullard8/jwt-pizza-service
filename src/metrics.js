@@ -1,40 +1,39 @@
-const config = require('./config.json');
+const fetch = require('node-fetch');
+const config = require('./config'); // Dynamically load configuration values from config.js
 
 class Metrics {
-  constructor() {
+  constructor(config) {
     this.totalRequests = 0;
-
-    // This will periodically sent metrics to Grafana
-    const timer = setInterval(() => {
-      this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
-    }, 10000);
-    timer.unref();
+    this.config = config.metrics;
   }
 
   incrementRequests() {
     this.totalRequests++;
+    this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
   }
 
-  sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
-    const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
+  async sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
+    const metric = `${metricPrefix},source=${this.config.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
-    fetch(`${config.url}`, {
-      method: 'post',
-      body: metric,
-      headers: { Authorization: `Bearer ${config.userId}:${config.apiKey}` },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          console.error('Failed to push metrics data to Grafana');
-        } else {
-          console.log(`Pushed ${metric}`);
-        }
-      })
-      .catch((error) => {
-        console.error('Error pushing metrics:', error);
+    try {
+      const response = await fetch(this.config.url, {
+        method: 'POST',
+        body: metric,
+        headers: {
+          Authorization: `Bearer ${this.config.userId}:${this.config.apiKey}`,
+        },
       });
+
+      if (!response.ok) {
+        console.error('Failed to push metrics data to Grafana');
+      } else {
+        console.log(`Pushed metric: ${metric}`);
+      }
+    } catch (error) {
+      console.error('Error pushing metrics to Grafana:', error);
+    }
   }
 }
 
-const metrics = new Metrics();
-module.exports = metrics;
+// Create and export an instance of Metrics with the loaded configuration
+module.exports = new Metrics(config);
