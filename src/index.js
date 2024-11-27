@@ -12,7 +12,6 @@ app.use((req, res, next) => {
 
 app.post('/api/auth', (req, res) => {
   if (req.body.email) {
-    greeting = req.body.email;
     metrics.incrementRequests('POST');
     res.send({ message: 'Auth Success' });
   } else {
