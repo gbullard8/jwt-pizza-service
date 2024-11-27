@@ -4,6 +4,8 @@ const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require('../metrics.js');
+const { get } = require('https');
+
 
 const orderRouter = express.Router();
 
@@ -45,7 +47,7 @@ orderRouter.endpoints = [
 orderRouter.get(
   '/menu',
   asyncHandler(async (req, res) => {
-    metrics.incrementRequests('GET');
+    metrics.incrementRequests("GET");
     res.send(await DB.getMenu());
   })
 );
@@ -61,6 +63,7 @@ orderRouter.put(
 
     const addMenuItemReq = req.body;
     await DB.addMenuItem(addMenuItemReq);
+    metrics.incrementRequests("PUT");
     res.send(await DB.getMenu());
   })
 );
@@ -70,6 +73,7 @@ orderRouter.get(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    metrics.incrementRequests("GET");
     res.json(await DB.getOrders(req.user, req.query.page));
   })
 );
@@ -88,6 +92,7 @@ orderRouter.post(
     });
     const j = await r.json();
     if (r.ok) {
+      metrics.incrementRequests("POST");
       res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
     } else {
       res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });

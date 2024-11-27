@@ -73,8 +73,10 @@ authRouter.post(
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
     const auth = await setAuth(user);
+    metrics.incrementRequests("POST");
     res.json({ user: user, token: auth });
   })
+  
 );
 
 // login
@@ -84,6 +86,7 @@ authRouter.put(
     const { email, password } = req.body;
     const user = await DB.getUser(email, password);
     const auth = await setAuth(user);
+    metrics.incrementRequests("PUT");
     res.json({ user: user, token: auth });
   })
 );
@@ -94,6 +97,7 @@ authRouter.delete(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     await clearAuth(req);
+    metrics.incrementRequests("DELETE");
     res.json({ message: 'logout successful' });
   })
 );
@@ -109,7 +113,7 @@ authRouter.put(
     if (user.id !== userId && !user.isRole(Role.Admin)) {
       return res.status(403).json({ message: 'unauthorized' });
     }
-
+    metrics.incrementRequests("PUT");
     const updatedUser = await DB.updateUser(userId, email, password);
     res.json(updatedUser);
   })
