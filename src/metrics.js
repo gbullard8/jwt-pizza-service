@@ -152,15 +152,6 @@ class Metrics {
     }
   }
 
-  async reportSystemMetrics() {
-    const cpuUsage = this.getCpuUsagePercentage();
-    const memoryUsage = this.getMemoryUsagePercentage();
-
-    console.log(`Reporting system metrics: CPU=${cpuUsage}%, Memory=${memoryUsage}%`);
-    await this.sendSystemMetric('cpu_usage', cpuUsage);
-    await this.sendSystemMetric('memory_usage', memoryUsage);
-  }
-
   getCpuUsagePercentage() {
     const cpuUsage = os.loadavg()[0] / os.cpus().length;
     return cpuUsage.toFixed(2) * 100;
@@ -174,23 +165,29 @@ class Metrics {
     return memoryUsage.toFixed(2);
   }
 
-  // sendMetricsPeriodically(period) {
-  //   const timer = setInterval(() => {
-  //     try {
-  //       const buf = new MetricBuilder();
-  //       httpMetrics(buf);
-  //       systemMetrics(buf);
-  //       userMetrics(buf);
-  //       purchaseMetrics(buf);
-  //       authMetrics(buf);
+  sendMetricsPeriodically(period = 5000) {
+    setInterval(async () => {
+      try {
+        for (const [method, count] of Object.entries(this.methodCounts)) {
+          await this.sendHTTPMetricToGrafana('request', method, 'total', count);
+        }
+
+        await this.sendActiveUserMetric();
   
-  //       const metrics = buf.toString('\n');
-  //       this.sendMetricToGrafana(metrics);
-  //     } catch (error) {
-  //       console.log('Error sending metrics', error);
-  //     }
-  //   }, period);
-  // }
+        await this.sendAuthMetric('auth_success', this.authSuccessCount);
+        await this.sendAuthMetric('auth_failure', this.authFailureCount);
+  
+        const cpuUsage = this.getCpuUsagePercentage();
+        const memoryUsage = this.getMemoryUsagePercentage();
+        await this.sendSystemMetric('cpu_usage', cpuUsage);
+        await this.sendSystemMetric('memory_usage', memoryUsage);
+  
+        console.log('Metrics sent successfully');
+      } catch (error) {
+        console.error('Error sending periodic metrics:', error);
+      }
+    }, period);
+  }
   
 }
 
