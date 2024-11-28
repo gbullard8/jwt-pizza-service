@@ -87,19 +87,24 @@ authRouter.put(
   '/',
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const user = await DB.getUser(email, password);
-    if (!user) {
-      metrics.incrementAuthFailure()
-      return res.status(401).json({ message: 'Invalid email or password' });
+    try {
+      const user = await DB.getUser(email, password);
+      if (!user) {
+        metrics.incrementAuthFailure(); 
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+      const auth = await setAuth(user);
+      metrics.incrementRequests('PUT');
+      metrics.incrementAuthSuccess(); 
+      metrics.incrementActiveUsers(); 
+      res.json({ user: user, token: auth });
+    } catch (error) {
+      metrics.incrementAuthFailure();
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'An error occurred during login' });
     }
-    const auth = await setAuth(user);
-    metrics.incrementRequests("PUT");
-    metrics.incrementActiveUsers();
-    metrics.incrementAuthSuccess();
-    res.json({ user: user, token: auth });
   })
 );
-
 // logout
 authRouter.delete(
   '/',
