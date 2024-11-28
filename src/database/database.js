@@ -4,6 +4,8 @@ const config = require('../config.js');
 const { StatusCodeError } = require('../endpointHelper.js');
 const { Role } = require('../model/model.js');
 const dbModel = require('./dbModel.js');
+const logger = require('../logging.js');
+
 class DB {
   constructor() {
     this.initialized = this.initializeDatabase();
@@ -285,8 +287,27 @@ class DB {
   }
 
   async query(connection, sql, params) {
-    const [results] = await connection.execute(sql, params);
-    return results;
+    const startTime = Date.now();
+    let result;
+
+    try {
+      result = await connection.execute(sql, params);
+    } catch (error) {
+      logger.log('error', 'database', {
+        message: 'Database query error',
+        query: sql,
+        params: JSON.stringify(params),
+        error: error.message,
+      });
+      throw error;
+    } finally {
+      const duration = Date.now() - startTime;
+      logger.logDatabaseQuery(sql, params, result, duration);
+    }
+  
+    return result[0];
+
+
   }
 
   async getID(connection, key, value, table) {
