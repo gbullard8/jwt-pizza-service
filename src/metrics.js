@@ -13,6 +13,8 @@ class Metrics {
     };
     this.config = config.metrics;
     this.activeUsers = 0;
+    this.authSuccessCount = 0;
+    this.authFailureCount = 0; 
   }
   //part 1 http requests
   incrementRequests(method) {
@@ -51,14 +53,12 @@ class Metrics {
   //part 2 active users
   incrementActiveUsers() {
     this.activeUsers++;
-    console.log(`incremented ${this.activeUsers}`)
     this.sendActiveUserMetric();
 
   }
   decrementActiveUsers() {
     if (this.activeUsers > 0) {
       this.activeUsers--;
-      console.log(`decremented ${this.activeUsers}`)
     }
     this.sendActiveUserMetric();
   }
@@ -89,6 +89,43 @@ class Metrics {
     }
   }
 
+  //part 3 auth attempts/min
+
+  incrementAuthSuccess() {
+    this.authSuccessCount++;
+    this.sendAuthMetric('auth_success', this.authSuccessCount);
+  }
+
+  incrementAuthFailure() {
+    this.authFailureCount++;
+    this.sendAuthMetric('auth_failure', this.authFailureCount);
+  }
+
+  async sendAuthMetric(metricName, metricValue) {
+    const metric = `${metricName},source=${this.config.source} count=${metricValue}`;
+
+    try {
+      const response = await fetch(this.config.url, {
+        method: 'POST',
+        body: metric,
+        headers: {
+          Authorization: `Bearer ${this.config.userId}:${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to push ${metricName} metric to Grafana: ${response.status} - ${response.statusText}`);
+      } else {
+        console.log(`Pushed ${metricName} metric successfully: ${metric}`);
+      }
+    } catch (error) {
+      console.error(`Error pushing ${metricName} metric to Grafana:`, error);
+    }
+  }
+
+
+
 
   getCpuUsagePercentage() {
     const cpuUsage = os.loadavg()[0] / os.cpus().length;
@@ -103,23 +140,23 @@ class Metrics {
     return memoryUsage.toFixed(2);
   }
 
-  sendMetricsPeriodically(period) {
-    const timer = setInterval(() => {
-      try {
-        const buf = new MetricBuilder();
-        httpMetrics(buf);
-        systemMetrics(buf);
-        userMetrics(buf);
-        purchaseMetrics(buf);
-        authMetrics(buf);
+  // sendMetricsPeriodically(period) {
+  //   const timer = setInterval(() => {
+  //     try {
+  //       const buf = new MetricBuilder();
+  //       httpMetrics(buf);
+  //       systemMetrics(buf);
+  //       userMetrics(buf);
+  //       purchaseMetrics(buf);
+  //       authMetrics(buf);
   
-        const metrics = buf.toString('\n');
-        this.sendMetricToGrafana(metrics);
-      } catch (error) {
-        console.log('Error sending metrics', error);
-      }
-    }, period);
-  }
+  //       const metrics = buf.toString('\n');
+  //       this.sendMetricToGrafana(metrics);
+  //     } catch (error) {
+  //       console.log('Error sending metrics', error);
+  //     }
+  //   }, period);
+  // }
   
 }
 
