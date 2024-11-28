@@ -29,6 +29,16 @@ class Logger {
     this.log(level, 'http', logData);
   }
 
+  logDatabaseQuery(query, params, result, duration) {
+    const logData = {
+      query: query,
+      params: JSON.stringify(params),
+      duration: `${duration}ms`,
+      result: JSON.stringify(result),
+    };
+    this.log('info', 'database', logData);
+  }
+
   log(level, type, logData) {
     const labels = { 
       component: config.logging.source, 
