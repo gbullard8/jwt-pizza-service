@@ -152,9 +152,9 @@ authRouter.put(
     }
     enableChaos = req.params.state === 'true';
     if (enableChaos) {
-      metrics.increment('chaos_mode_enabled');
+      metrics.incrementChaosEnabled('chaos_mode_enabled');
     } else {
-      metrics.increment('chaos_mode_disabled');
+      metrics.incrementChaosDisabled('chaos_mode_disabled');
     }
 
     logger.log('info', 'chaos', { message: `Chaos mode toggled`, state: enableChaos });
