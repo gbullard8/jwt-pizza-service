@@ -143,26 +143,7 @@ authRouter.put(
   })
 );
 
-authRouter.put(
-  '/chaos/:state',
-  authRouter.authenticateToken,
-  asyncHandler(async (req, res) => {
-    if (!req.user.isRole(Role.Admin)) {
-      throw new StatusCodeError('unknown endpoint', 404);
-    }
-    enableChaos = req.params.state === 'true';
-    if (enableChaos) {
-      metrics.incrementChaosEnabled('chaos_mode_enabled');
-    } else {
-      metrics.incrementChaosDisabled('chaos_mode_disabled');
-    }
 
-    logger.log('info', 'chaos', { message: `Chaos mode toggled`, state: enableChaos });
-
-    
-    res.json({ chaos: enableChaos });
-  })
-);
 
 async function setAuth(user) {
   const token = jwt.sign(user, config.jwtSecret);
