@@ -151,6 +151,14 @@ authRouter.put(
       throw new StatusCodeError('unknown endpoint', 404);
     }
 
+    if (enableChaos) {
+      metrics.increment('chaos_mode_enabled');
+    } else {
+      metrics.increment('chaos_mode_disabled');
+    }
+
+    logger.log('info', 'chaos', { message: `Chaos mode toggled`, state: enableChaos });
+
     enableChaos = req.params.state === 'true';
     res.json({ chaos: enableChaos });
   })

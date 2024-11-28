@@ -21,7 +21,43 @@ class Metrics {
     this.creationFailures = 0; 
     this.totalRevenue = 0; 
     this.latencyTimes = []; 
+    this.chaosEnabledCount = 0;
+    this.chaosDisabledCount = 0;
   }
+
+  incrementChaosEnabled() {
+    this.chaosEnabledCount++;
+    this.sendChaosMetric('chaos_enabled', this.chaosEnabledCount);
+  }
+
+  incrementChaosDisabled() {
+    this.chaosDisabledCount++;
+    this.sendChaosMetric('chaos_disabled', this.chaosDisabledCount);
+  }
+
+  async sendChaosMetric(metricName, metricValue) {
+    const metric = `${metricName},source=${config.metrics.source} count=${metricValue}`;
+
+    try {
+      const response = await fetch(config.metrics.url, {
+        method: 'POST',
+        body: metric,
+        headers: {
+          Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to push ${metricName} metric to Grafana: ${response.status} - ${response.statusText}`);
+      } else {
+        console.log(`Pushed ${metricName} metric successfully: ${metric}`);
+      }
+    } catch (error) {
+      console.error(`Error pushing ${metricName} metric to Grafana:`, error);
+    }
+  }
+
   //part 1 http requests
   incrementRequests(method) {
     this.totalRequests++;

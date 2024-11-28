@@ -43,6 +43,14 @@ class Logger {
     };
     this.log('info', 'database', logData);
   }
+  
+  logChaosEvent(enabled) {
+    const logData = {
+      event: 'chaos_mode_toggled',
+      state: enabled ? 'enabled' : 'disabled',
+    };
+    this.log('info', 'chaos', logData);
+  }
 
   log(level, type, logData) {
     const labels = { 
