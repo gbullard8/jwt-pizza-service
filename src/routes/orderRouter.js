@@ -105,7 +105,7 @@ orderRouter.post(
         const latency = endTime - startTime;
 
         metrics.incrementRequests('POST');
-        metrics.incrementPizzaSales(orderReq.items.reduce((sum, item) => sum + item.price, 0)); // Log pizzas sold and revenue
+        metrics.incrementPizzaSales(orderReq.items.reduce((sum, item) => sum + item.price, 0));
         metrics.logLatency(latency);
         logger.log('info', 'order', { message: 'Order created successfully', orderId: order.id, user: req.user.id });
         logger.log('info', 'factory', { message: 'Received successful response from factory service', response: j });

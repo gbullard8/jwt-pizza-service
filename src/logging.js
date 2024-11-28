@@ -2,6 +2,11 @@ const config = require('./config.js');
 const fetch = require('node-fetch');
 
 class Logger {
+
+    constructor() {
+        this.initializeExceptionHandlers();
+      }
+      
     httpLogger = (req, res, next) => {
         const originalSend = res.send;  
         res.send = (body) => {
@@ -66,6 +71,22 @@ class Logger {
   sanitize(logData) {
     logData = JSON.stringify(logData);
     return logData.replace(/\\"password\\":\s*\\"[^"]*\\"/g, '\\"password\\": \\"*****\\"');
+  }
+
+  logUnhandledExceptions() {
+    process.on('uncaughtException', (error) => {
+      this.log('error', 'exception', { message: 'Unhandled exception occurred', error: error.message, stack: error.stack });
+      console.error('Unhandled Exception:', error);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      this.log('error', 'promise', { message: 'Unhandled promise rejection', reason: reason?.message || reason, stack: reason?.stack || 'No stack trace available' });
+      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+  }
+
+  initializeExceptionHandlers() {
+    this.logUnhandledExceptions();
   }
 
   async sendLogToGrafana(event) {
