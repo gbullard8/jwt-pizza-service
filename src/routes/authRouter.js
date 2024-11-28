@@ -150,7 +150,7 @@ authRouter.put(
     if (!req.user.isRole(Role.Admin)) {
       throw new StatusCodeError('unknown endpoint', 404);
     }
-
+    enableChaos = req.params.state === 'true';
     if (enableChaos) {
       metrics.increment('chaos_mode_enabled');
     } else {
@@ -159,7 +159,7 @@ authRouter.put(
 
     logger.log('info', 'chaos', { message: `Chaos mode toggled`, state: enableChaos });
 
-    enableChaos = req.params.state === 'true';
+    
     res.json({ chaos: enableChaos });
   })
 );
