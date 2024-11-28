@@ -145,7 +145,15 @@ authRouter.put(
 
 async function setAuth(user) {
   const token = jwt.sign(user, config.jwtSecret);
-  await DB.loginUser(user.id, token);
+  try {
+    await DB.loginUser(user.id, token);
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      logger.log('warn', 'auth', { message: 'Duplicate login detected', user: user.id });
+      throw new Error('Concurrent login attempt detected');
+    }
+    throw error;
+  }
   return token;
 }
 
