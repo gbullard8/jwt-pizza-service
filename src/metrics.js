@@ -2,6 +2,8 @@ const fetch = require('node-fetch');
 const config = require('./config.js');
 const os = require('os');
 
+
+
 class Metrics {
   constructor(config) {
     this.totalRequests = 0;
@@ -167,7 +169,7 @@ class Metrics {
 
   sendMetricsPeriodically(period = 5000) {
     setInterval(async () => {
-      try {
+      
         for (const [method, count] of Object.entries(this.methodCounts)) {
           await this.sendHTTPMetricToGrafana('request', method, 'total', count);
         }
@@ -182,10 +184,7 @@ class Metrics {
         await this.sendSystemMetric('cpu_usage', cpuUsage);
         await this.sendSystemMetric('memory_usage', memoryUsage);
   
-        console.log('Metrics sent successfully');
-      } catch (error) {
-        console.error('Error sending periodic metrics:', error);
-      }
+        
     }, period);
   }
   
