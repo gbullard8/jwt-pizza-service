@@ -96,8 +96,9 @@ franchiseRouter.post(
 
     const franchise = req.body;
     metrics.incrementRequests("POST");
+    const newFranchise = await DB.createFranchise(franchise);
     logger.log('info', 'franchise', { message: 'Franchise created', franchiseId: newFranchise.id });
-    res.send(await DB.createFranchise(franchise));
+    res.send(newFranchise);
   })
 );
 
@@ -128,8 +129,9 @@ franchiseRouter.post(
       throw new StatusCodeError('unable to create a store', 403);
     }
     metrics.incrementRequests("POST");
+    const newStore = await DB.createStore(franchise.id, req.body);
     logger.log('info', 'store', { message: 'Store created', storeId: newStore.id, franchiseId: franchiseId });
-    res.send(await DB.createStore(franchise.id, req.body));
+    res.send(newStore);
   })
 );
 

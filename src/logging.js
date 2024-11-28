@@ -3,17 +3,12 @@ const fetch = require('node-fetch');
 
 class Logger {
     httpLogger = (req, res, next) => {
-        // Save the original send function
-        const originalSend = res.send;
-    
-        // Overwrite res.send to log the response before sending it
+        const originalSend = res.send;  
         res.send = (body) => {
-          // Attach to the finish event to ensure the response is logged after all modifications are made
           res.on('finish', () => {
             this.logRequestResponse(req, res, body);
           });
     
-          // Call the original send function with the response body
           return originalSend.call(res, body);
         };
     
