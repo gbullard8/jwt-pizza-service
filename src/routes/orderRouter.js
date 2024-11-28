@@ -84,18 +84,33 @@ orderRouter.post(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     const orderReq = req.body;
-    const order = await DB.addDinerOrder(req.user, orderReq);
-    const r = await fetch(`${config.factory.url}/api/order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
-      body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
-    });
-    const j = await r.json();
-    if (r.ok) {
-      metrics.incrementRequests("POST");
-      res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
-    } else {
-      res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
+    const startTime = Date.now(); // Start timing latency
+    try {
+      const order = await DB.addDinerOrder(req.user, orderReq);
+      const r = await fetch(`${config.factory.url}/api/order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
+        body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
+      });
+      const j = await r.json();
+
+      if (r.ok) {
+        const endTime = Date.now();
+        const latency = endTime - startTime;
+
+        metrics.incrementRequests('POST');
+        metrics.incrementPizzaSales(orderReq.items.reduce((sum, item) => sum + item.price, 0)); // Log pizzas sold and revenue
+        metrics.logLatency(latency);
+
+        res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
+      } else {
+        metrics.incrementCreationFailures();
+        res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
+      }
+    } catch (error) {
+      metrics.incrementCreationFailures();
+      console.error('Error creating order:', error);
+      res.status(500).send({ message: 'Failed to process order' });
     }
   })
 );

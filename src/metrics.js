@@ -17,6 +17,10 @@ class Metrics {
     this.activeUsers = 0;
     this.authSuccessCount = 0;
     this.authFailureCount = 0; 
+    this.pizzasSold = 0; 
+    this.creationFailures = 0; 
+    this.totalRevenue = 0; 
+    this.latencyTimes = []; 
   }
   //part 1 http requests
   incrementRequests(method) {
@@ -167,6 +171,47 @@ class Metrics {
     return memoryUsage.toFixed(2);
   }
 
+  //part 5 adn 6 pizza sales
+  incrementPizzaSales(revenue) {
+    this.pizzasSold++;
+    this.totalRevenue += revenue;
+    this.sendPizzaMetric('pizzas_sold', this.pizzasSold);
+    this.sendPizzaMetric('revenue', this.totalRevenue);
+  }
+
+  incrementCreationFailures() {
+    this.creationFailures++;
+    this.sendPizzaMetric('creation_failures', this.creationFailures);
+  }
+
+  logLatency(latency) {
+    this.latencyTimes.push(latency);
+    this.sendPizzaMetric('latency', latency);
+  }
+
+  async sendPizzaMetric(metricName, metricValue) {
+    const metric = `${metricName},source=${config.metrics.source} value=${metricValue}`;
+
+    try {
+      const response = await fetch(config.metrics.url, {
+        method: 'POST',
+        body: metric,
+        headers: {
+          Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to push ${metricName} metric to Grafana: ${response.status} - ${response.statusText}`);
+      } else {
+        console.log(`Pushed ${metricName} metric successfully: ${metric}`);
+      }
+    } catch (error) {
+      console.error(`Error pushing ${metricName} metric to Grafana:`, error);
+    }
+  }
+
   sendMetricsPeriodically(period = 5000) {
     setInterval(async () => {
       
@@ -183,10 +228,15 @@ class Metrics {
         const memoryUsage = this.getMemoryUsagePercentage();
         await this.sendSystemMetric('cpu_usage', cpuUsage);
         await this.sendSystemMetric('memory_usage', memoryUsage);
+
+        await this.sendPizzaMetric('pizzas_sold', this.pizzasSold);
+        await this.sendPizzaMetric('creation_failures', this.creationFailures);
+        await this.sendPizzaMetric('revenue', this.totalRevenue);
   
         
     }, period);
   }
+
   
 }
 
