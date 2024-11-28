@@ -127,8 +127,39 @@ class Metrics {
     }
   }
 
+  //part 4 system metrics
 
+  async sendSystemMetric(metricName, metricValue) {
+    const metric = `${metricName},source=${config.metrics.source} value=${metricValue}`;
 
+    try {
+      const response = await fetch(config.metrics.url, {
+        method: 'POST',
+        body: metric,
+        headers: {
+          Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to push ${metricName} metric to Grafana: ${response.status} - ${response.statusText}`);
+      } else {
+        console.log(`Pushed ${metricName} metric successfully: ${metric}`);
+      }
+    } catch (error) {
+      console.error(`Error pushing ${metricName} metric to Grafana:`, error);
+    }
+  }
+
+  async reportSystemMetrics() {
+    const cpuUsage = this.getCpuUsagePercentage();
+    const memoryUsage = this.getMemoryUsagePercentage();
+
+    console.log(`Reporting system metrics: CPU=${cpuUsage}%, Memory=${memoryUsage}%`);
+    await this.sendSystemMetric('cpu_usage', cpuUsage);
+    await this.sendSystemMetric('memory_usage', memoryUsage);
+  }
 
   getCpuUsagePercentage() {
     const cpuUsage = os.loadavg()[0] / os.cpus().length;
