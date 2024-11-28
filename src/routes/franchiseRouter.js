@@ -3,8 +3,11 @@ const { DB, Role } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { StatusCodeError, asyncHandler } = require('../endpointHelper.js');
 const metrics = require('../metrics.js'); 
+const logger = require('../logging.js');
 
 const franchiseRouter = express.Router();
+franchiseRouter.use(logger.httpLogger);
+
 
 franchiseRouter.endpoints = [
   {
@@ -61,6 +64,7 @@ franchiseRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("GET");
+    logger.log('info', 'franchise', { message: 'Fetched all franchises', user: req.user?.id });
     res.json(await DB.getFranchises(req.user));
   })
 );
@@ -76,6 +80,7 @@ franchiseRouter.get(
       result = await DB.getUserFranchises(userId);
     }
     metrics.incrementRequests("GET");
+    logger.log('info', 'franchise', { message: 'Fetched user franchises', userId: userId });
     res.json(result);
   })
 );
@@ -91,6 +96,7 @@ franchiseRouter.post(
 
     const franchise = req.body;
     metrics.incrementRequests("POST");
+    logger.log('info', 'franchise', { message: 'Franchise created', franchiseId: newFranchise.id });
     res.send(await DB.createFranchise(franchise));
   })
 );
@@ -106,6 +112,7 @@ franchiseRouter.delete(
     const franchiseId = Number(req.params.franchiseId);
     await DB.deleteFranchise(franchiseId);
     metrics.incrementRequests("DELETE");
+    logger.log('info', 'franchise', { message: 'Franchise deleted', franchiseId: franchiseId });
     res.json({ message: 'franchise deleted' });
   })
 );
@@ -121,6 +128,7 @@ franchiseRouter.post(
       throw new StatusCodeError('unable to create a store', 403);
     }
     metrics.incrementRequests("POST");
+    logger.log('info', 'store', { message: 'Store created', storeId: newStore.id, franchiseId: franchiseId });
     res.send(await DB.createStore(franchise.id, req.body));
   })
 );
@@ -139,6 +147,7 @@ franchiseRouter.delete(
     const storeId = Number(req.params.storeId);
     await DB.deleteStore(franchiseId, storeId);
     metrics.incrementRequests("DELETE");
+    logger.log('info', 'store', { message: 'Store deleted', storeId: storeId, franchiseId: franchiseId });
     res.json({ message: 'store deleted' });
   })
 );

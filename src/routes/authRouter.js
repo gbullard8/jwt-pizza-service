@@ -4,8 +4,10 @@ const config = require('../config.js');
 const { asyncHandler } = require('../endpointHelper.js');
 const { DB, Role } = require('../database/database.js');
 const metrics = require('../metrics.js'); 
+const logger = require('../logging.js');
 
 const authRouter = express.Router();
+authRouter.use(logger.httpLogger);
 
 authRouter.endpoints = [
   {
@@ -71,12 +73,14 @@ authRouter.post(
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       metrics.incrementAuthFailure()
+      logger.log('warn', 'auth', { message: 'Invalid email or password', email: email });
       return res.status(400).json({ message: 'name, email, and password are required' });
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
     const auth = await setAuth(user);
     metrics.incrementRequests("POST");
     metrics.incrementAuthSuccess();
+    logger.log('info', 'auth', { message: 'User registered successfully', user: user.id });
     res.json({ user: user, token: auth });
   })
   
@@ -91,16 +95,19 @@ authRouter.put(
       const user = await DB.getUser(email, password);
       if (!user) {
         metrics.incrementAuthFailure(); 
+        logger.log('warn', 'auth', { message: 'Invalid email or password', email: email });
         return res.status(401).json({ message: 'Invalid email or password' });
       }
       const auth = await setAuth(user);
       metrics.incrementRequests('PUT');
       metrics.incrementAuthSuccess(); 
       metrics.incrementActiveUsers(); 
+      logger.log('info', 'auth', { message: 'User logged in successfully', user: user.id });
       res.json({ user: user, token: auth });
     } catch (error) {
       metrics.incrementAuthFailure();
       console.error('Login error:', error);
+      logger.log('error', 'auth', { message: 'Login error', error: error.message });
       res.status(500).json({ message: 'An error occurred during login' });
     }
   })
@@ -113,6 +120,7 @@ authRouter.delete(
     await clearAuth(req);
     metrics.incrementRequests("DELETE");
     metrics.decrementActiveUsers();
+    logger.log('info', 'auth', { message: 'User logged out successfully', user: req.user.id });
     res.json({ message: 'logout successful' });
   })
 );
@@ -130,6 +138,7 @@ authRouter.put(
     }
     metrics.incrementRequests("PUT");
     const updatedUser = await DB.updateUser(userId, email, password);
+    logger.log('info', 'auth', { message: 'User updated successfully', user: userId });
     res.json(updatedUser);
   })
 );

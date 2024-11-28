@@ -4,10 +4,12 @@ const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require('../metrics.js');
+const logger = require('../logging.js');
 
 
 
 const orderRouter = express.Router();
+orderRouter.use(logger.httpLogger);
 
 orderRouter.endpoints = [
   {
@@ -49,6 +51,7 @@ orderRouter.get(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("GET");
     res.send(await DB.getMenu());
+    logger.log('info', 'menu', { message: 'Fetched menu' });
   })
 );
 
@@ -64,6 +67,7 @@ orderRouter.put(
     const addMenuItemReq = req.body;
     await DB.addMenuItem(addMenuItemReq);
     metrics.incrementRequests("PUT");
+    logger.log('info', 'menu', { message: 'Menu item added', item: addMenuItemReq.title });
     res.send(await DB.getMenu());
   })
 );
@@ -74,6 +78,7 @@ orderRouter.get(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("GET");
+    logger.log('info', 'order', { message: 'Fetched user orders', user: req.user.id });
     res.json(await DB.getOrders(req.user, req.query.page));
   })
 );
@@ -101,15 +106,18 @@ orderRouter.post(
         metrics.incrementRequests('POST');
         metrics.incrementPizzaSales(orderReq.items.reduce((sum, item) => sum + item.price, 0)); // Log pizzas sold and revenue
         metrics.logLatency(latency);
+        logger.log('info', 'order', { message: 'Order created successfully', orderId: order.id, user: req.user.id });
 
         res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
       } else {
         metrics.incrementCreationFailures();
+        logger.log('error', 'order', { message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
         res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
       }
     } catch (error) {
       metrics.incrementCreationFailures();
       console.error('Error creating order:', error);
+      logger.log('error', 'order', { message: 'Error creating order', error: error.message });
       res.status(500).send({ message: 'Failed to process order' });
     }
   })
