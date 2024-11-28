@@ -92,6 +92,7 @@ orderRouter.post(
     const startTime = Date.now(); // Start timing latency
     try {
       const order = await DB.addDinerOrder(req.user, orderReq);
+      logger.log('info', 'factory', { message: 'Sending request to factory service', url: `${config.factory.url}/api/order`, order });
       const r = await fetch(`${config.factory.url}/api/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
@@ -107,11 +108,12 @@ orderRouter.post(
         metrics.incrementPizzaSales(orderReq.items.reduce((sum, item) => sum + item.price, 0)); // Log pizzas sold and revenue
         metrics.logLatency(latency);
         logger.log('info', 'order', { message: 'Order created successfully', orderId: order.id, user: req.user.id });
+        logger.log('info', 'factory', { message: 'Received successful response from factory service', response: j });
 
         res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
       } else {
         metrics.incrementCreationFailures();
-        logger.log('error', 'order', { message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
+        logger.log('error', 'factory', { message: 'Failed to fulfill order at factory', status: r.status, response: j });
         res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
       }
     } catch (error) {
