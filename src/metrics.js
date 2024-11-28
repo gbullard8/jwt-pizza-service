@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const config = require('./config.js');
+const os = require('os');
 
 class Metrics {
   constructor(config) {
@@ -11,8 +12,9 @@ class Metrics {
       DELETE: 0,
     };
     this.config = config.metrics;
+    this.activeUsers = 0;
   }
-
+  //part 1 http requests
   incrementRequests(method) {
     this.totalRequests++;
     console.log(`method ${method}`);
@@ -20,11 +22,11 @@ class Metrics {
     this.methodCounts[method]++;
       
     
-    this.sendMetricToGrafana('request', 'all', 'total', this.totalRequests);
-    this.sendMetricToGrafana('request', method, 'total', this.methodCounts[method]);
+    this.sendHTTPMetricToGrafana('request', 'all', 'total', this.totalRequests);
+    this.sendHTTPMetricToGrafana('request', method, 'total', this.methodCounts[method]);
   }
 
-  async sendMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
+  async sendHTTPMetricToGrafana(metricPrefix, httpMethod, metricName, metricValue) {
     const metric = `${metricPrefix},source=${config.metrics.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
     try {
@@ -45,7 +47,82 @@ class Metrics {
       console.error('Error pushing metrics to Grafana:', error);
     }
   }
+
+  //part 2 active users
+  incrementActiveUsers() {
+    this.activeUsers++;
+    console.log(`incremented ${this.activeUsers}`)
+    this.sendActiveUserMetric();
+
+  }
+  decrementActiveUsers() {
+    if (this.activeUsers > 0) {
+      this.activeUsers--;
+      console.log(`decremented ${this.activeUsers}`)
+    }
+    this.sendActiveUserMetric();
+  }
+
+  async sendActiveUserMetric() {
+    console.log("Entered active users metric");
+  
+    const metric = `active_users,source=${config.metrics.source} count=${this.activeUsers}`;
+  
+    try {
+      console.log("Entered active users metric");
+      const response = await fetch(config.metrics.url, {
+        method: 'POST',
+        body: metric,
+        headers: {
+          Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
+          'Content-Type': 'application/json', 
+        },
+      });
+  
+      if (!response.ok) {
+        console.error(`Failed to push active user metric to Grafana: ${response.status} - ${response.statusText}`);
+      } else {
+        console.log(`Pushed active user metric successfully: ${metric}`);
+      }
+    } catch (error) {
+      console.error('Error pushing active user metric to Grafana:', error);
+    }
+  }
+
+
+  getCpuUsagePercentage() {
+    const cpuUsage = os.loadavg()[0] / os.cpus().length;
+    return cpuUsage.toFixed(2) * 100;
+  }
+  
+  getMemoryUsagePercentage() {
+    const totalMemory = os.totalmem();
+    const freeMemory = os.freemem();
+    const usedMemory = totalMemory - freeMemory;
+    const memoryUsage = (usedMemory / totalMemory) * 100;
+    return memoryUsage.toFixed(2);
+  }
+
+  sendMetricsPeriodically(period) {
+    const timer = setInterval(() => {
+      try {
+        const buf = new MetricBuilder();
+        httpMetrics(buf);
+        systemMetrics(buf);
+        userMetrics(buf);
+        purchaseMetrics(buf);
+        authMetrics(buf);
+  
+        const metrics = buf.toString('\n');
+        this.sendMetricToGrafana(metrics);
+      } catch (error) {
+        console.log('Error sending metrics', error);
+      }
+    }, period);
+  }
+  
 }
+
 
 module.exports = new Metrics(config);
 
