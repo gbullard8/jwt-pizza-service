@@ -93,23 +93,26 @@ class Metrics {
 
   incrementAuthSuccess() {
     this.authSuccessCount++;
+    console.log(`inc Auth Success ${this.authSuccessCount}`)
     this.sendAuthMetric('auth_success', this.authSuccessCount);
   }
 
   incrementAuthFailure() {
     this.authFailureCount++;
+    console.log(`inc Auth fail ${this.authFailureCount}`)
     this.sendAuthMetric('auth_failure', this.authFailureCount);
   }
 
   async sendAuthMetric(metricName, metricValue) {
-    const metric = `${metricName},source=${this.config.source} count=${metricValue}`;
+    console.log(`in send auth met`)
+    const metric = `${metricName},source=${config.metrics.source} count=${metricValue}`;
 
     try {
-      const response = await fetch(this.config.url, {
+      const response = await fetch(config.metrics.url, {
         method: 'POST',
         body: metric,
         headers: {
-          Authorization: `Bearer ${this.config.userId}:${this.config.apiKey}`,
+          Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
           'Content-Type': 'application/json',
         },
       });
